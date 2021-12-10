@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 from crowd_nav.utils.transform import MultiAgentTransform
-
+import pytorch_lightning as pl
 
 class ImitDataset(Dataset):
 
@@ -93,7 +93,7 @@ class TrajDataset(Dataset):
     def __getitem__(self, idx):
         return self.obsv[idx], self.target[idx]
 
-
+"""
 def split_dataset(dataset, batch_size, percent_label=1.0, validation_split=0.3, is_random=False):
 
     dataset_size = len(dataset)
@@ -116,3 +116,33 @@ def split_dataset(dataset, batch_size, percent_label=1.0, validation_split=0.3, 
     valid_loader = DataLoader(dataset, batch_size=batch_size, sampler=valid_sampler)
 
     return train_loader, valid_loader
+"""
+    
+class split_dataset(pl.LightningDataModule):
+    
+    def __init__(self, dataset, batch_size, percent_label=1.0, validation_split=0.3, is_random=False):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        dataset_size = len(dataset)
+        split = int(validation_split * dataset_size)
+        
+        if is_random:
+            indices = torch.randperm(dataset_size)
+        else:
+            indices = torch.arange(dataset_size)
+            
+        self.train_indices, self.val_indices = indices[:int((dataset_size-split)*percent_label)], indices[-split:]  
+        logging.info("train_indices: %d - %d", self.train_indices[0].item(), self.train_indices[-1].item())
+        logging.info("val_indices: %d - %d", self.val_indices[0].item(), self.val_indices[-1].item())
+         
+    def train_dataloader(self):    	
+        train_sampler = SubsetRandomSampler(self.train_indices)
+        train_loader = DataLoader(self.dataset, batch_size=self.batch_size, sampler=train_sampler)
+        
+        return train_loader
+        
+    def val_dataloader(self):        
+        valid_sampler = SubsetRandomSampler(self.val_indices)
+        valid_loader = DataLoader(self.dataset, batch_size=self.batch_size, sampler=valid_sampler)
+        
+        return valid_loader
