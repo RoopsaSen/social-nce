@@ -68,7 +68,10 @@ def set_loader(args, device):
     dataset_imit = ImitDataset(data_imit, None, device, horizon=args.contrast_horizon)
 
     validation_split = 0.3
-    train_loader, valid_loader = split_dataset(dataset_imit, args.batch_size, args.percent_label, validation_split)
+    DataLoader = split_dataset(dataset_imit, args.batch_size, args.percent_label, validation_split)
+    train_loader = DataLoader.train_dataloader()
+    valid_loader = DataLoader.val_dataloader()
+    #train_loader, valid_loader = split_dataset(dataset_imit, args.batch_size, args.percent_label, validation_split)
     return train_loader, valid_loader
 
 
